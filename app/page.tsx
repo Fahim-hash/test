@@ -1,82 +1,157 @@
 'use client';
 
-import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
-const skills = [
-  { name: 'Graphic Design', score: 94, level: 'Advanced' },
-  { name: 'Video Editing', score: 89, level: 'Intermediate' },
-  { name: 'Web Development', score: 92, level: 'Advanced' },
-];
+type CardKind = 'LINK' | 'BOOST' | 'BREAK' | 'REVERSE CURRENT' | 'WILD';
+type Card = { id: number; kind: CardKind; color: string; value: string };
 
-const candidates = [
-  ['AR', 'Arif Rahman', 'Graphic Design', '94'],
-  ['SK', 'Sadia Karim', 'Social Design', '91'],
-  ['RH', 'Rafi Hasan', 'Branding', '87'],
-];
+type Player = { name: string; hand: Card[]; score: number };
+
+const COLORS = ['red', 'blue', 'violet', 'gold'];
+const KINDS: CardKind[] = ['LINK', 'BOOST', 'BREAK', 'REVERSE CURRENT', 'WILD'];
+
+function buildDeck() {
+  const deck: Card[] = [];
+  let id = 1;
+  for (let round = 0; round < 5; round++) {
+    for (const color of COLORS) {
+      for (const kind of KINDS) {
+        deck.push({ id: id++, kind, color, value: kind === 'REVERSE CURRENT' ? '↔' : kind === 'WILD' ? '✦' : String(round + 1) });
+      }
+    }
+  }
+  return deck.sort(() => Math.random() - 0.5);
+}
+
+function playable(card: Card, top: Card) {
+  return card.kind === 'WILD' || card.color === top.color || card.kind === top.kind || card.value === top.value;
+}
+
+function CardView({ card, selected, onClick, disabled = false }: { card: Card; selected?: boolean; onClick?: () => void; disabled?: boolean }) {
+  return (
+    <button disabled={disabled} onClick={onClick} className={`kin-card ${card.color} ${selected ? 'selected' : ''} ${disabled ? 'disabled' : ''}`} aria-label={`${card.color} ${card.kind} ${card.value}`}>
+      <span className="card-corner">{card.value}</span>
+      <span className="card-kind">{card.kind}</span>
+      <span className="card-glyph">{card.kind === 'LINK' ? '◈' : card.kind === 'BOOST' ? '↗' : card.kind === 'BREAK' ? '×' : card.kind === 'REVERSE CURRENT' ? '⟲' : '✦'}</span>
+      <span className="card-corner bottom">{card.value}</span>
+    </button>
+  );
+}
 
 export default function Home() {
-  const [toast, setToast] = useState('');
-  const [activeSkill, setActiveSkill] = useState(0);
+  const [players, setPlayers] = useState<Player[]>([]);
+  const [deck, setDeck] = useState<Card[]>([]);
+  const [discard, setDiscard] = useState<Card[]>([]);
+  const [current, setCurrent] = useState(0);
+  const [direction, setDirection] = useState(1);
+  const [status, setStatus] = useState('Create a match to enter the arena.');
+  const [winner, setWinner] = useState<string | null>(null);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [started, setStarted] = useState(false);
 
-  const notify = (message: string) => {
-    setToast(message);
-    window.setTimeout(() => setToast(''), 2200);
-  };
+  const top = discard[discard.length - 1];
+  const active = players[current];
+  const canPlay = useMemo(() => active?.hand.map((c) => playable(c, top)) ?? [], [active, top]);
+
+  function startGame(count = 2) {
+    const pile = buildDeck();
+    const nextPlayers: Player[] = Array.from({ length: count }, (_, i) => ({ name: i === 0 ? 'YOU' : `RIVAL ${i}`, hand: pile.splice(0, 7), score: 0 }));
+    const first = pile.shift()!;
+    setPlayers(nextPlayers); setDeck(pile); setDiscard([first]); setCurrent(0); setDirection(1); setWinner(null); setSelected(null); setStarted(true);
+    setStatus(`Current: YOU. Match ${count} players. Build the chain.`);
+  }
+
+  function draw() {
+    if (!active) return;
+    let nextDeck = [...deck];
+    let nextDiscard = [...discard];
+    if (!nextDeck.length && nextDiscard.length > 1) {
+      const keep = nextDiscard.pop()!;
+      nextDeck = nextDiscard.sort(() => Math.random() - 0.5);
+      nextDiscard = [keep];
+    }
+    const card = nextDeck.shift();
+    if (!card) return;
+    const nextPlayers = players.map((p, i) => i === current ? { ...p, hand: [...p.hand, card] } : p);
+    setPlayers(nextPlayers); setDeck(nextDeck); setDiscard(nextDiscard); setSelected(null); setStatus(`${active.name} drew a card.`);
+  }
+
+  function play(card: Card) {
+    if (!active || !playable(card, top)) return;
+    const nextHand = active.hand.filter((c) => c.id !== card.id);
+    const nextPlayers = players.map((p, i) => i === current ? { ...p, hand: nextHand } : p);
+    setPlayers(nextPlayers); setDiscard([...discard, card]); setSelected(null);
+
+    if (!nextHand.length) {
+      setWinner(active.name); setStatus(`${active.name} completed the chain.`); return;
+    }
+
+    let nextDirection = direction;
+    if (card.kind === 'REVERSE CURRENT') nextDirection *= -1;
+    setDirection(nextDirection);
+    let step = card.kind === 'BREAK' ? 2 : 1;
+    const nextIndex = (current + nextDirection * step + nextPlayers.length) % nextPlayers.length;
+    setCurrent(nextIndex);
+    setStatus(card.kind === 'REVERSE CURRENT' ? `${active.name} played REVERSE CURRENT. Direction flipped.` : `${active.name} played ${card.kind}.`);
+
+    if (nextPlayers.length > 1 && nextIndex !== 0) {
+      window.setTimeout(() => aiTurn(nextIndex, nextPlayers, nextDirection, card), 450);
+    }
+  }
+
+  function aiTurn(index: number, statePlayers: Player[], dir: number, topCard: Card) {
+    const ai = statePlayers[index];
+    if (!ai || winner) return;
+    const possible = ai.hand.find((c) => playable(c, topCard));
+    if (possible) {
+      const hand = ai.hand.filter((c) => c.id !== possible.id);
+      const updated = statePlayers.map((p, i) => i === index ? { ...p, hand } : p);
+      setPlayers(updated); setDiscard((d) => [...d, possible]);
+      let nd = dir;
+      if (possible.kind === 'REVERSE CURRENT') nd *= -1;
+      if (!hand.length) { setWinner(ai.name); setStatus(`${ai.name} completed the chain.`); return; }
+      const skip = possible.kind === 'BREAK' ? 2 : 1;
+      const ni = (index + nd * skip + updated.length) % updated.length;
+      setDirection(nd); setCurrent(ni); setStatus(`${ai.name} played ${possible.kind}.`);
+      if (ni !== 0) window.setTimeout(() => aiTurn(ni, updated, nd, possible), 500);
+    } else {
+      const oldDeck = [...deck]; const drawn = oldDeck.shift();
+      if (drawn) setPlayers(statePlayers.map((p, i) => i === index ? { ...p, hand: [...p.hand, drawn] } : p));
+      setDeck(oldDeck); setCurrent(0); setStatus(`${ai.name} could not link — your turn.`);
+    }
+  }
+
+  function reset() { setStarted(false); setPlayers([]); setDeck([]); setDiscard([]); setWinner(null); setStatus('Create a match to enter the arena.'); }
 
   return (
-    <main className="site">
-      <div className="topline"><span>SKILLPROOF / BETA</span><button onClick={() => notify('You are on the early-access list.')}>Get early access →</button></div>
-
-      <header className="site-nav shell">
-        <Link href="/" className="logo"><span>S</span> skillproof</Link>
-        <nav><a href="#product">Product</a><a href="#proof">Proof</a><a href="#hiring">For employers</a><a href="#pricing">Pricing</a></nav>
-        <Link href="/trial" className="nav-cta">Try demo</Link>
+    <main className="kinetix-app">
+      <header className="kin-nav">
+        <div className="brand"><span className="brand-mark">K</span><div><strong>KINETIX</strong><small>WEB EDITION / 01</small></div></div>
+        <div className="nav-status"><span className="pulse" /> LIVE RULESET <b>v1.0</b></div>
+        <button className="ghost-btn" onClick={reset}>EXIT MATCH</button>
       </header>
 
-      <section className="new-hero shell">
-        <div className="hero-label">THE SKILL CREDENTIAL</div>
-        <h1>Show what you can <span>do.</span></h1>
-        <p className="hero-lead">A practical way to verify skills, build credible proof, and help employers hire beyond the CV.</p>
-        <div className="hero-buttons"><Link href="/trial" className="black-button">Build your proof <b>↗</b></Link><a href="#product" className="plain-button">See how it works ↓</a></div>
-        <div className="hero-note"><span>01</span> Practical challenges <span>02</span> Transparent scoring <span>03</span> Public proof</div>
-      </section>
+      {!started ? (
+        <section className="landing">
+          <div className="eyebrow">STRATEGIC CHAIN-BUILDING CARD GAME</div>
+          <h1>CONTROL<br /><em>THE CURRENT.</em></h1>
+          <p>Build chains. Break momentum. Reverse the table. KINETIX is a fast tactical card battle where every move changes what comes next.</p>
+          <div className="start-row"><button className="primary-btn" onClick={() => startGame(2)}>START 1V1 <span>↗</span></button><button className="secondary-btn" onClick={() => startGame(3)}>3 PLAYER</button></div>
+          <div className="landing-grid"><div><b>07</b><span>Cards / hand</span></div><div><b>05</b><span>Card classes</span></div><div><b>⟲</b><span>Current can reverse</span></div></div>
+        </section>
+      ) : (
+        <section className="arena">
+          <div className="arena-top"><div><span className="eyebrow">MATCH / {players.length} PLAYERS</span><h2>{winner ? 'CHAIN COMPLETE' : 'THE ARENA'}</h2></div><div className="turn-box"><span>TURN</span><strong>{active?.name}</strong><small>{direction === 1 ? 'CLOCKWISE →' : '← REVERSED'}</small></div></div>
+          <div className="table">
+            <div className="opponents">{players.slice(1).map((p, i) => <div className="opponent" key={p.name}><span className="mini-avatar">{i + 1}</span><div><b>{p.name}</b><small>{p.hand.length} cards</small></div><strong>{String(p.score).padStart(2, '0')}</strong></div>)}</div>
+            <div className="center-pile"><div className="chain-label">CHAIN / {discard.length}</div><div className="pile-cards"><div className="deck-back"><span>K</span><small>KINETIX</small></div>{top && <CardView card={top} disabled />}</div><div className="status-line"><i /> {winner ? `${winner} wins the match.` : status}</div></div>
+            <div className="your-area"><div className="your-label"><span>YOUR HAND</span><b>{active?.hand.length} CARDS</b></div><div className="hand">{active?.hand.map((card, i) => <CardView key={card.id} card={card} selected={selected === i} disabled={current !== 0 || !!winner || !canPlay[i]} onClick={() => play(card)} />)}</div><div className="action-row"><button className="draw-btn" onClick={draw} disabled={current !== 0 || !!winner}>DRAW CARD <span>↓</span></button><span className="hint">{current === 0 ? 'Select a glowing card to play' : 'Opponent is calculating…'}</span></div></div>
+          </div>
+          <div className="rules-strip"><div><b>LINK</b><span>Match color, kind or value.</span></div><div><b>BREAK</b><span>Skip the next current.</span></div><div><b>REVERSE CURRENT</b><span>Flip direction instantly.</span></div><div><b>WILD</b><span>Connect to anything.</span></div></div>
+        </section>
+      )}
 
-      <section className="proof-preview shell" id="proof">
-        <div className="preview-intro"><span>01 / PROOF PROFILE</span><h2>Your CV says it.<br /><em>Your proof shows it.</em></h2></div>
-        <div className="profile-ui">
-          <div className="profile-head"><div className="person"><div className="person-avatar">FM</div><div><b>Fahim M.</b><small>Graphic Designer · Bangladesh</small></div></div><span className="verified-pill">✓ VERIFIED</span></div>
-          <div className="profile-score"><div><small>OVERALL SCORE</small><strong>94</strong><span>/100</span></div><div className="score-copy"><b>Excellent</b><p>Top 8% of verified designers</p></div></div>
-          <div className="profile-skills">{['Photoshop','Illustrator','Social Design'].map((skill, i) => <div key={skill}><span>{skill}</span><div><i style={{ width: `${[96,92,94][i]}%` }} /></div><b>{[96,92,94][i]}</b></div>)}</div>
-          <div className="profile-foot"><span>Verified · 09 Sep 2026</span><span>SP-8F42K</span></div>
-        </div>
-      </section>
-
-      <section className="statement" id="product"><div className="shell statement-grid"><span className="section-index">02 / THE IDEA</span><div><h2>Credentials explain <em>where</em> you learned. Proof explains <strong>what you can do.</strong></h2><p>SkillProof gives candidates a standardized way to demonstrate practical ability and gives employers a better signal than self-reported skills.</p></div></div></section>
-
-      <section className="steps-section shell">
-        <div className="section-top"><span>03 / HOW IT WORKS</span><h2>Three steps.<br />One clear signal.</h2></div>
-        <div className="new-steps">
-          <article><span>01</span><h3>Choose a skill</h3><p>Select a practical skill and difficulty level. No degree filter. No keyword games.</p><Link href="/challenges">Browse challenges →</Link></article>
-          <article><span>02</span><h3>Do real work</h3><p>Complete a realistic task under a clear brief and submit the work you actually produced.</p><Link href="/trial">Try a challenge →</Link></article>
-          <article><span>03</span><h3>Get verified</h3><p>Receive a transparent score, skill breakdown and a shareable verification profile.</p><Link href="/verify">View verification →</Link></article>
-        </div>
-      </section>
-
-      <section className="challenge-showcase"><div className="shell"><div className="section-top"><span>04 / CHALLENGES</span><h2>Built around the<br />work, not the quiz.</h2></div><div className="challenge-layout"><div className="skill-tabs">{skills.map((skill, i) => <button key={skill.name} className={activeSkill === i ? 'selected' : ''} onClick={() => setActiveSkill(i)}><span>0{i + 1}</span>{skill.name}<b>→</b></button>)}</div><div className="challenge-detail"><span className="detail-tag">{skills[activeSkill].level.toUpperCase()}</span><h3>{skills[activeSkill].name === 'Graphic Design' ? 'Create a launch campaign' : skills[activeSkill].name === 'Video Editing' ? 'Turn raw footage into a 30s reel' : 'Build a responsive product card'}</h3><p>Complete a realistic client-style brief. Your result is evaluated against a visible rubric covering quality, accuracy, execution and reasoning.</p><div className="detail-meta"><span>TIME <b>{activeSkill === 1 ? '60' : '45'} MIN</b></span><span>BENCHMARK <b>{skills[activeSkill].score}/100</b></span><Link href="/challenges">Open library ↗</Link></div></div></div></div></section>
-
-      <section className="dark-proof"><div className="shell dark-grid"><div><span>05 / THE SCORE</span><h2>No black box.<br /><em>Just evidence.</em></h2><p>Every score has a rubric behind it. Candidates understand their result; employers understand the signal.</p><Link href="/trial" className="dark-button">See the product →</Link></div><div className="rubric-ui"><div className="rubric-title"><b>Graphic Design / Intermediate</b><strong>91</strong></div>{[['Execution','96'],['Visual hierarchy','93'],['Brief accuracy','88'],['Process & reasoning','87']].map(([label, score]) => <div className="rubric-line" key={label}><div><span>{label}</span><b>{score}</b></div><i style={{ width: `${score}%` }} /></div>)}<small>AI-assisted review · transparent rubric</small></div></div></section>
-
-      <section className="hiring-section shell" id="hiring"><div className="section-top"><span>06 / FOR EMPLOYERS</span><h2>Hire the person<br />who can <em>actually do it.</em></h2></div><div className="hiring-grid"><div className="hiring-copy"><p>Search by demonstrated skill, compare verified scores and inspect proof before starting the interview.</p><Link href="/employers" className="black-button">Explore hiring <b>↗</b></Link></div><div className="candidate-ui"><div className="candidate-toolbar"><span>GRAPHIC DESIGNER</span><b>3 verified matches</b></div>{candidates.map(([initials, name, skill, score]) => <div className="candidate-row" key={name}><span className="candidate-avatar">{initials}</span><div><b>{name}</b><small>{skill} · Verified</small></div><strong>{score}</strong><button onClick={() => notify(`${name}'s proof opened.`)}>View</button></div>)}<div className="candidate-footer">Score 85+ · Verified · Photoshop</div></div></div></section>
-
-      <section className="numbers"><div className="shell numbers-grid"><div><small>01</small><b>Real work</b><span>Practical assessments</span></div><div><small>02</small><b>Clear score</b><span>Visible evaluation</span></div><div><small>03</small><b>Public proof</b><span>One shareable profile</span></div><div><small>04</small><b>Better hiring</b><span>Skill-first discovery</span></div></div></section>
-
-      <section className="pricing-new shell" id="pricing"><div className="section-top"><span>07 / PRICING</span><h2>Simple from day one.</h2></div><div className="price-row"><article><span>FREE</span><h3>Candidate</h3><strong>৳0</strong><p>Start building your first proof.</p><Link href="/pricing">Get started →</Link></article><article className="price-main"><span>PRO</span><h3>Candidate Pro</h3><strong>৳199<small>/mo</small></strong><p>More skills, attempts and detailed evidence.</p><Link href="/pricing">Join waitlist →</Link></article><article><span>HIRING</span><h3>Employer</h3><strong>৳499<small>/mo</small></strong><p>Search and shortlist verified candidates.</p><Link href="/pricing">Explore hiring →</Link></article></div></section>
-
-      <section className="final-new"><div className="shell"><span>08 / START HERE</span><h2>Your next opportunity<br />should see your <em>work.</em></h2><div><Link href="/trial" className="lime-button">Try SkillProof <b>↗</b></Link><button onClick={() => notify('Early access request noted.')}>Get early access</button></div></div></section>
-
-      <footer className="new-footer shell"><div><Link href="/" className="logo"><span>S</span> skillproof</Link><p>Proof over promises.</p></div><div className="footer-nav"><div><b>Product</b><Link href="/trial">Trial</Link><Link href="/challenges">Challenges</Link><Link href="/verify">Verify</Link></div><div><b>Teams</b><Link href="/employers">Employers</Link><Link href="/pricing">Pricing</Link></div><div><b>Company</b><a href="#product">About</a><a href="#product">Contact</a></div></div><div className="footer-bottom"><span>© 2026 SkillProof</span><span>Built for skill-first hiring.</span></div></footer>
-      {toast && <div className="toast">{toast}</div>}
+      <footer className="kin-footer"><span>KINETIX / WEB EDITION</span><span>BUILT FOR THE CHAIN · 2026</span><span>NO LOGIN · LOCAL PLAY</span></footer>
     </main>
   );
 }
