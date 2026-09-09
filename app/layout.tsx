@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Fahim — Creative Designer & Visual Storyteller',
-  description: 'Portfolio of Syed Fahim Muddasir — visual identity, graphic design, motion, photography and creative digital experiences.',
+  title: 'SkillProof — Prove what you can do',
+  description: 'Verify skills through practical challenges and help employers hire ability, not credentials.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
