@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'SkillProof — Prove what you can do',
-  description: 'Verify skills through practical challenges and help employers hire ability, not credentials.',
+  title: 'KINETIX — Web Edition',
+  description: 'A fast strategic chain-building card game. Control the current.',
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
