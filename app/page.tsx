@@ -1,94 +1,81 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 const skills = [
-  ['PS', 'Photoshop', '91'],
-  ['AI', 'Illustrator', '88'],
-  ['UI', 'Social Design', '94'],
+  { name: 'Graphic Design', score: 94, level: 'Advanced' },
+  { name: 'Video Editing', score: 89, level: 'Intermediate' },
+  { name: 'Web Development', score: 92, level: 'Advanced' },
 ];
 
-const challengeSamples = [
-  { tag: 'Graphic Design', title: 'Design a launch campaign', time: '45 min', level: 'Intermediate', score: '94' },
-  { tag: 'Video Editing', title: 'Turn raw footage into a 30s reel', time: '60 min', level: 'Intermediate', score: '89' },
-  { tag: 'Web Development', title: 'Build a responsive product card', time: '50 min', level: 'Advanced', score: '92' },
+const candidates = [
+  ['AR', 'Arif Rahman', 'Graphic Design', '94'],
+  ['SK', 'Sadia Karim', 'Social Design', '91'],
+  ['RH', 'Rafi Hasan', 'Branding', '87'],
 ];
-
-const faqs = [
-  ['Is SkillProof a replacement for a CV?', 'No. Your CV gives context; SkillProof adds evidence. Candidates can use both together.'],
-  ['How are scores calculated?', 'Each challenge uses a visible rubric covering execution, accuracy, problem solving, quality and consistency. AI assists the review; high-stakes verification can include human review.'],
-  ['Can employers see my files?', 'Only what you choose to publish. You control which projects, scores and proof details appear on your public profile.'],
-  ['What skills can I verify?', 'The platform starts with practical digital skills and can expand into development, marketing, sales, writing, spreadsheets and other measurable work.'],
-];
-
-function ScoreRing({ score = 91 }: { score?: number }) {
-  return <div className="score-ring" style={{ '--score': `${score * 3.6}deg` } as React.CSSProperties}><div><strong>{score}</strong><span>/100</span></div></div>;
-}
 
 export default function Home() {
-  const [role, setRole] = useState<'candidate' | 'employer'>('candidate');
-  const [openFaq, setOpenFaq] = useState<number | null>(0);
   const [toast, setToast] = useState('');
+  const [activeSkill, setActiveSkill] = useState(0);
 
   const notify = (message: string) => {
     setToast(message);
-    window.setTimeout(() => setToast(''), 2600);
+    window.setTimeout(() => setToast(''), 2200);
   };
 
   return (
-    <main>
-      <div className="announcement"><span>●</span> SkillProof Beta is opening soon <button onClick={() => notify('You are on the early-access list ✓')}>Get early access →</button></div>
+    <main className="site">
+      <div className="topline"><span>SKILLPROOF / BETA</span><button onClick={() => notify('You are on the early-access list.')}>Get early access →</button></div>
 
-      <nav className="nav shell">
-        <a className="brand" href="#top" aria-label="SkillProof home"><span className="brand-mark">S</span> SkillProof</a>
-        <div className="nav-links"><a href="#how">How it works</a><a href="#challenges">Challenges</a><a href="#skills">Skills</a><a href="#employers">Employers</a><a href="#pricing">Pricing</a></div>
-        <button className="btn ghost" onClick={() => notify('Sign-in will be available in the beta.')}>Sign in</button>
-      </nav>
+      <header className="site-nav shell">
+        <Link href="/" className="logo"><span>S</span> skillproof</Link>
+        <nav><a href="#product">Product</a><a href="#proof">Proof</a><a href="#hiring">For employers</a><a href="#pricing">Pricing</a></nav>
+        <Link href="/trial" className="nav-cta">Try demo</Link>
+      </header>
 
-      <section id="top" className="hero shell">
-        <div className="hero-copy">
-          <div className="eyebrow"><span /> THE CREDENTIAL FOR WHAT YOU CAN ACTUALLY DO</div>
-          <h1>Don’t just show your CV.<br /><em>Prove your skill.</em></h1>
-          <p>SkillProof turns ability into measurable, shareable evidence. Take practical challenges, submit real work, understand your score, and give employers something better than another list of claims.</p>
-          <div className="hero-actions"><button className="btn primary" onClick={() => notify('Challenge mode selected — beta access coming soon.')}>Prove my skills <span>→</span></button><button className="btn text" onClick={() => { setRole('employer'); document.getElementById('employers')?.scrollIntoView({ behavior: 'smooth' }); }}>I’m hiring <span>↗</span></button></div>
-          <div className="micro-proof"><span>✓ No degree required</span><span>✓ Practical tasks</span><span>✓ Shareable profile</span></div>
-          <div className="trust"><div className="avatars"><i>F</i><i>A</i><i>N</i><i>R</i><i>+</i></div><span><b>1,200+</b> early professionals want skill-first hiring.</span></div>
-        </div>
-        <div className="proof-card-wrap">
-          <div className="floating-tag top">✦ AI-ASSISTED</div>
-          <div className="proof-card">
-            <div className="card-top"><div className="profile"><div className="avatar">F</div><div><b>Fahim M.</b><span>Graphic Designer · Dhaka</span></div></div><span className="verified">✓ VERIFIED</span></div>
-            <div className="score-area"><ScoreRing /><div><span className="label">OVERALL SKILL SCORE</span><h3>Excellent</h3><p>Top 8% in this skill</p></div></div>
-            <div className="skill-list">{skills.map(([icon, name, score]) => <div className="skill" key={name}><span className="skill-icon">{icon}</span><div><b>{name}</b><div className="bar"><i style={{ width: `${score}%` }} /></div></div><strong>{score}</strong></div>)}</div>
-            <div className="card-foot"><span>Verified Sep 09, 2026</span><span>SP · 8F42K</span></div>
-          </div>
-          <div className="floating-tag bottom">↗ Share proof</div>
-          <div className="floating-note"><b>94%</b><span>Hiring match</span></div>
+      <section className="new-hero shell">
+        <div className="hero-label">THE SKILL CREDENTIAL</div>
+        <h1>Show what you can <span>do.</span></h1>
+        <p className="hero-lead">A practical way to verify skills, build credible proof, and help employers hire beyond the CV.</p>
+        <div className="hero-buttons"><Link href="/trial" className="black-button">Build your proof <b>↗</b></Link><a href="#product" className="plain-button">See how it works ↓</a></div>
+        <div className="hero-note"><span>01</span> Practical challenges <span>02</span> Transparent scoring <span>03</span> Public proof</div>
+      </section>
+
+      <section className="proof-preview shell" id="proof">
+        <div className="preview-intro"><span>01 / PROOF PROFILE</span><h2>Your CV says it.<br /><em>Your proof shows it.</em></h2></div>
+        <div className="profile-ui">
+          <div className="profile-head"><div className="person"><div className="person-avatar">FM</div><div><b>Fahim M.</b><small>Graphic Designer · Bangladesh</small></div></div><span className="verified-pill">✓ VERIFIED</span></div>
+          <div className="profile-score"><div><small>OVERALL SCORE</small><strong>94</strong><span>/100</span></div><div className="score-copy"><b>Excellent</b><p>Top 8% of verified designers</p></div></div>
+          <div className="profile-skills">{['Photoshop','Illustrator','Social Design'].map((skill, i) => <div key={skill}><span>{skill}</span><div><i style={{ width: `${[96,92,94][i]}%` }} /></div><b>{[96,92,94][i]}</b></div>)}</div>
+          <div className="profile-foot"><span>Verified · 09 Sep 2026</span><span>SP-8F42K</span></div>
         </div>
       </section>
 
-      <section className="stats"><div className="shell stat-grid"><div><strong>01</strong><span>Real-world challenges</span></div><div><strong>02</strong><span>Transparent scoring</span></div><div><strong>03</strong><span>Shareable proof profile</span></div><div><strong>04</strong><span>Skill-first hiring</span></div></div></section>
+      <section className="statement" id="product"><div className="shell statement-grid"><span className="section-index">02 / THE IDEA</span><div><h2>Credentials explain <em>where</em> you learned. Proof explains <strong>what you can do.</strong></h2><p>SkillProof gives candidates a standardized way to demonstrate practical ability and gives employers a better signal than self-reported skills.</p></div></div></section>
 
-      <section id="how" className="section shell">
-        <div className="section-heading"><div className="eyebrow"><span /> THE NEW CREDENTIAL</div><h2>Credentials tell a story.<br /><em>Proof tells the truth.</em></h2><p>Degrees, courses and CVs matter. But the clearest signal is still the work itself. SkillProof creates a common language for showing that work.</p></div>
-        <div className="steps"><article><div className="step-number">01</div><span className="step-icon">⌁</span><h3>Take a challenge</h3><p>Choose a skill and level. Get a realistic task designed around work you might actually do.</p><small>45–90 minutes · timed or untimed</small></article><article><div className="step-number">02</div><span className="step-icon">□</span><h3>Show your work</h3><p>Upload the final output, process notes and optional source files. Context counts.</p><small>Work samples · reasoning · iterations</small></article><article><div className="step-number">03</div><span className="step-icon">✓</span><h3>Earn your proof</h3><p>See exactly where you scored well, where you can improve and what your profile proves.</p><small>Score · rubric · verification ID</small></article></div>
+      <section className="steps-section shell">
+        <div className="section-top"><span>03 / HOW IT WORKS</span><h2>Three steps.<br />One clear signal.</h2></div>
+        <div className="new-steps">
+          <article><span>01</span><h3>Choose a skill</h3><p>Select a practical skill and difficulty level. No degree filter. No keyword games.</p><Link href="/challenges">Browse challenges →</Link></article>
+          <article><span>02</span><h3>Do real work</h3><p>Complete a realistic task under a clear brief and submit the work you actually produced.</p><Link href="/trial">Try a challenge →</Link></article>
+          <article><span>03</span><h3>Get verified</h3><p>Receive a transparent score, skill breakdown and a shareable verification profile.</p><Link href="/verify">View verification →</Link></article>
+        </div>
       </section>
 
-      <section id="challenges" className="challenge-section"><div className="shell"><div className="section-heading"><div className="eyebrow"><span /> PRACTICAL CHALLENGE LIBRARY</div><h2>Not trivia. <em>Actual work.</em></h2><p>Every challenge is built around a realistic deliverable, not a memory test.</p></div><div className="challenge-grid">{challengeSamples.map((c) => <article className="challenge-card" key={c.title}><div className="challenge-top"><span>{c.tag}</span><b>↗</b></div><h3>{c.title}</h3><div className="challenge-meta"><span>◷ {c.time}</span><span>◆ {c.level}</span></div><div className="challenge-bottom"><span>Sample benchmark</span><strong>{c.score}/100</strong></div></article>)}</div></div></section>
+      <section className="challenge-showcase"><div className="shell"><div className="section-top"><span>04 / CHALLENGES</span><h2>Built around the<br />work, not the quiz.</h2></div><div className="challenge-layout"><div className="skill-tabs">{skills.map((skill, i) => <button key={skill.name} className={activeSkill === i ? 'selected' : ''} onClick={() => setActiveSkill(i)}><span>0{i + 1}</span>{skill.name}<b>→</b></button>)}</div><div className="challenge-detail"><span className="detail-tag">{skills[activeSkill].level.toUpperCase()}</span><h3>{skills[activeSkill].name === 'Graphic Design' ? 'Create a launch campaign' : skills[activeSkill].name === 'Video Editing' ? 'Turn raw footage into a 30s reel' : 'Build a responsive product card'}</h3><p>Complete a realistic client-style brief. Your result is evaluated against a visible rubric covering quality, accuracy, execution and reasoning.</p><div className="detail-meta"><span>TIME <b>{activeSkill === 1 ? '60' : '45'} MIN</b></span><span>BENCHMARK <b>{skills[activeSkill].score}/100</b></span><Link href="/challenges">Open library ↗</Link></div></div></div></div></section>
 
-      <section id="skills" className="dark-section"><div className="shell skill-banner"><div><div className="eyebrow light"><span /> BUILT FOR REAL SKILLS</div><h2>From Photoshop to Python.<br /><em>Prove what you know.</em></h2><p>Start narrow, build deeply, then expand. Each skill gets its own challenge library, rubric and benchmark.</p></div><div className="skill-pills"><span>Graphic Design</span><span>Video Editing</span><span>Web Development</span><span>Digital Marketing</span><span>Excel</span><span>Sales</span><span>Content Writing</span><span>UI/UX</span><span>Data Analysis</span><span>+ more</span></div></div></section>
+      <section className="dark-proof"><div className="shell dark-grid"><div><span>05 / THE SCORE</span><h2>No black box.<br /><em>Just evidence.</em></h2><p>Every score has a rubric behind it. Candidates understand their result; employers understand the signal.</p><Link href="/trial" className="dark-button">See the product →</Link></div><div className="rubric-ui"><div className="rubric-title"><b>Graphic Design / Intermediate</b><strong>91</strong></div>{[['Execution','96'],['Visual hierarchy','93'],['Brief accuracy','88'],['Process & reasoning','87']].map(([label, score]) => <div className="rubric-line" key={label}><div><span>{label}</span><b>{score}</b></div><i style={{ width: `${score}%` }} /></div>)}<small>AI-assisted review · transparent rubric</small></div></div></section>
 
-      <section className="score-section shell"><div><div className="eyebrow"><span /> A SCORE YOU CAN UNDERSTAND</div><h2>No mysterious<br /><em>AI magic.</em></h2><p>See the rubric behind the number. SkillProof breaks performance into useful signals instead of handing you an unexplained percentage.</p><button className="btn primary" onClick={() => notify('Example rubric opened — detailed scoring is coming in beta.')}>See sample rubric <span>→</span></button></div><div className="rubric-card"><div className="rubric-head"><b>Graphic Design · Intermediate</b><span>91 / 100</span></div>{[['Execution', '96'], ['Visual hierarchy', '93'], ['Typography', '90'], ['Brief accuracy', '88'], ['Process & reasoning', '87']].map(([name, score]) => <div className="rubric-row" key={name}><div><span>{name}</span><b>{score}</b></div><div className="rubric-bar"><i style={{ width: `${score}%` }} /></div></div>)}<div className="rubric-foot">Last assessed · 12 min ago <span>VERIFICATION ID · 8F42K</span></div></div></section>
+      <section className="hiring-section shell" id="hiring"><div className="section-top"><span>06 / FOR EMPLOYERS</span><h2>Hire the person<br />who can <em>actually do it.</em></h2></div><div className="hiring-grid"><div className="hiring-copy"><p>Search by demonstrated skill, compare verified scores and inspect proof before starting the interview.</p><Link href="/employers" className="black-button">Explore hiring <b>↗</b></Link></div><div className="candidate-ui"><div className="candidate-toolbar"><span>GRAPHIC DESIGNER</span><b>3 verified matches</b></div>{candidates.map(([initials, name, skill, score]) => <div className="candidate-row" key={name}><span className="candidate-avatar">{initials}</span><div><b>{name}</b><small>{skill} · Verified</small></div><strong>{score}</strong><button onClick={() => notify(`${name}'s proof opened.`)}>View</button></div>)}<div className="candidate-footer">Score 85+ · Verified · Photoshop</div></div></div></section>
 
-      <section id="employers" className="employer shell"><div className="employer-copy"><div className="eyebrow"><span /> FOR EMPLOYERS</div><h2>Stop filtering CVs.<br /><em>Start seeing ability.</em></h2><p>Compare candidates by demonstrated skill, inspect relevant proof and create hiring shortlists around what the role actually needs.</p><div className="role-switch"><button className={role === 'candidate' ? 'active' : ''} onClick={() => setRole('candidate')}>Candidate view</button><button className={role === 'employer' ? 'active' : ''} onClick={() => setRole('employer')}>Employer view</button></div><button className="btn primary" onClick={() => notify('Employer workspace requested.')}>Explore hiring <span>→</span></button></div><div className="hire-card"><div className="hire-head"><div><span className="tiny-label">OPEN ROLE</span><b>Graphic Designer</b></div><span>3 verified candidates</span></div><div className="filter-row"><span>Score: 85+</span><span>Photoshop</span><span>Verified</span></div>{[['A','Arif Rahman','Photoshop · Illustrator','94'],['S','Sadia K.','Photoshop · Social Design','91'],['R','Rafi H.','Illustrator · Branding','87']].map(([initial,name,skillsText,score]) => <div className="candidate" key={name}><span className="mini-avatar">{initial}</span><div><b>{name}</b><small>{skillsText}</small></div><strong>{score}</strong><button onClick={() => notify(`${name}'s proof profile opened.`)}>View</button></div>)}<div className="hire-foot">↗ Compare evidence · Export shortlist</div></div></section>
+      <section className="numbers"><div className="shell numbers-grid"><div><small>01</small><b>Real work</b><span>Practical assessments</span></div><div><small>02</small><b>Clear score</b><span>Visible evaluation</span></div><div><small>03</small><b>Public proof</b><span>One shareable profile</span></div><div><small>04</small><b>Better hiring</b><span>Skill-first discovery</span></div></div></section>
 
-      <section id="pricing" className="pricing-section"><div className="shell"><div className="section-heading"><div className="eyebrow"><span /> SIMPLE BY DESIGN</div><h2>Start free. <em>Prove more.</em></h2><p>Keep the first step frictionless. Pay only when you need more verification or hiring power.</p></div><div className="pricing-grid"><article><span className="plan">CANDIDATE</span><h3>Free</h3><p>Build your first proof profile.</p><strong>৳0 <small>forever</small></strong><ul><li>1 verified skill</li><li>Basic challenges</li><li>Public proof profile</li><li>Shareable verification link</li></ul><button className="btn ghost" onClick={() => notify('Free candidate signup selected.')}>Get started</button></article><article className="featured"><span className="popular">MOST USEFUL</span><span className="plan">CANDIDATE PRO</span><h3>Pro</h3><p>For people serious about standing out.</p><strong>৳199 <small>/ month</small></strong><ul><li>Unlimited challenge attempts</li><li>Detailed skill breakdowns</li><li>Multiple verified skills</li><li>Private & public proof controls</li></ul><button className="btn primary" onClick={() => notify('Pro plan interest saved.')}>Join the waitlist <span>→</span></button></article><article><span className="plan">EMPLOYER</span><h3>Hiring</h3><p>For teams hiring skill-first.</p><strong>৳499 <small>/ month</small></strong><ul><li>Candidate search</li><li>Skill-based shortlists</li><li>Proof profile previews</li><li>Hiring workspace</li></ul><button className="btn ghost" onClick={() => notify('Employer plan interest saved.')}>Talk to us</button></article></div></div></section>
+      <section className="pricing-new shell" id="pricing"><div className="section-top"><span>07 / PRICING</span><h2>Simple from day one.</h2></div><div className="price-row"><article><span>FREE</span><h3>Candidate</h3><strong>৳0</strong><p>Start building your first proof.</p><Link href="/pricing">Get started →</Link></article><article className="price-main"><span>PRO</span><h3>Candidate Pro</h3><strong>৳199<small>/mo</small></strong><p>More skills, attempts and detailed evidence.</p><Link href="/pricing">Join waitlist →</Link></article><article><span>HIRING</span><h3>Employer</h3><strong>৳499<small>/mo</small></strong><p>Search and shortlist verified candidates.</p><Link href="/pricing">Explore hiring →</Link></article></div></section>
 
-      <section className="faq-section shell"><div className="faq-intro"><div className="eyebrow"><span /> QUESTIONS, ANSWERED</div><h2>The boring details<br /><em>matter.</em></h2><p>Because trust lives in the tiny details too.</p></div><div className="faqs">{faqs.map(([q,a], i) => <div className={`faq ${openFaq === i ? 'open' : ''}`} key={q}><button onClick={() => setOpenFaq(openFaq === i ? null : i)}><span>{q}</span><b>{openFaq === i ? '−' : '+'}</b></button>{openFaq === i && <p>{a}</p>}</div>)}</div></section>
+      <section className="final-new"><div className="shell"><span>08 / START HERE</span><h2>Your next opportunity<br />should see your <em>work.</em></h2><div><Link href="/trial" className="lime-button">Try SkillProof <b>↗</b></Link><button onClick={() => notify('Early access request noted.')}>Get early access</button></div></div></section>
 
-      <section className="final-cta"><div className="shell"><div className="eyebrow light"><span /> YOUR NEXT OPPORTUNITY SHOULD SEE MORE THAN A CV</div><h2>Make your ability<br /><em>impossible to ignore.</em></h2><div><button className="btn lime" onClick={() => notify('You are on the early-access list ✓')}>Get early access <span>→</span></button><button className="btn final-link" onClick={() => document.getElementById('how')?.scrollIntoView({ behavior: 'smooth' })}>How it works ↗</button></div></div></section>
-
-      <footer><div className="shell footer-inner"><div><a className="brand" href="#top"><span className="brand-mark">S</span> SkillProof</a><p>Proof over promises. Built for a more skill-first internet.</p></div><div className="footer-links"><div><b>Product</b><a href="#how">How it works</a><a href="#challenges">Challenges</a><a href="#skills">Skills</a></div><div><b>For teams</b><a href="#employers">Employers</a><a href="#pricing">Pricing</a><a href="#top">Early access</a></div><div><b>Company</b><a href="#top">About</a><a href="#top">Contact</a><a href="#top">Privacy</a></div></div><div className="footer-bottom"><span>© 2026 SkillProof</span><span>Made for people who can actually do the work.</span><span>SP · 8F42K · β</span></div></div></footer>
+      <footer className="new-footer shell"><div><Link href="/" className="logo"><span>S</span> skillproof</Link><p>Proof over promises.</p></div><div className="footer-nav"><div><b>Product</b><Link href="/trial">Trial</Link><Link href="/challenges">Challenges</Link><Link href="/verify">Verify</Link></div><div><b>Teams</b><Link href="/employers">Employers</Link><Link href="/pricing">Pricing</Link></div><div><b>Company</b><a href="#product">About</a><a href="#product">Contact</a></div></div><div className="footer-bottom"><span>© 2026 SkillProof</span><span>Built for skill-first hiring.</span></div></footer>
       {toast && <div className="toast">{toast}</div>}
     </main>
   );
