@@ -1,5 +1,40 @@
 'use client';
 import { useState } from 'react';
 import TrialShell from '../components/TrialShell';
-const plans=[['Free','৳0','forever',['1 verified skill','Basic challenges','Public proof profile','Verification link']],['Pro','৳199','/ month',['Unlimited attempts','Detailed breakdowns','Multiple skills','Advanced profile controls']],['Hiring','৳499','/ month',['Candidate search','Skill filters','Proof previews','Hiring workspace']]];
-export default function Pricing(){const [selected,setSelected]=useState('');return <TrialShell title="Pricing without the fine print." kicker="PLANS & BILLING"><div className="trial-grid">{plans.map((p,i)=><article className="trial-card" key={p[0]} style={i===1?{background:'#10100f',color:'#fff',transform:'translateY(-8px)'}:{}}><span className="trial-tag">{i===1?'MOST POPULAR':'PLAN'}</span><h2>{p[0]}</h2><p>{i===0?'For getting your first proof.':i===1?'For candidates who want a stronger signal.':'For teams hiring skill-first.'}</p><strong style={{font:'700 32px DM Mono',display:'block',margin:'20px 0'}}>{p[1]} <small style={{fontSize:9,color:'#999'}}>{p[2]}</small></strong><ul style={{listStyle:'none',padding:0}}>{p[3].map(f=><li key={f} style={{padding:'12px 0',borderTop:'1px solid #444',fontSize:10}}>✓ {f}</li>)}</ul><button className={`trial-btn ${i===1?'lime':'light'}`} style={{width:'100%',marginTop:12}} onClick={()=>setSelected(p[0])}>{selected===p[0]?'Selected ✓':'Choose '+p[0]}</button></article>)}</div><div className="trial-card" style={{marginTop:15}}><span className="trial-tag">TRIAL BILLING</span><h3>No payment is connected.</h3><p>Every pricing action is simulated in this trial build. No card, subscription, invoice or real account is created.</p><div className="trial-grid">{['Cancel anytime','No hidden setup fee','Upgrade/downgrade demo','Transparent limits'].map(x=><div className="trial-stat" key={x}><strong style={{fontSize:16}}>✓ {x}</strong><small>Included in the product design</small></div>)}</div></div></TrialShell>}
+
+type Plan = { name: string; price: string; period: string; description: string; features: string[] };
+const plans: Plan[] = [
+  { name: 'Free', price: '৳0', period: 'forever', description: 'For getting your first proof.', features: ['1 verified skill', 'Basic challenges', 'Public proof profile', 'Verification link'] },
+  { name: 'Pro', price: '৳199', period: '/ month', description: 'For candidates who want a stronger signal.', features: ['Unlimited attempts', 'Detailed breakdowns', 'Multiple skills', 'Advanced profile controls'] },
+  { name: 'Hiring', price: '৳499', period: '/ month', description: 'For teams hiring skill-first.', features: ['Candidate search', 'Skill filters', 'Proof previews', 'Hiring workspace'] },
+];
+
+export default function Pricing() {
+  const [selected, setSelected] = useState('');
+  return (
+    <TrialShell title="Pricing without the fine print." kicker="PLANS & BILLING">
+      <div className="trial-grid">
+        {plans.map((plan, i) => (
+          <article className="trial-card" key={plan.name} style={i === 1 ? { background: '#10100f', color: '#fff', transform: 'translateY(-8px)' } : {}}>
+            <span className="trial-tag">{i === 1 ? 'MOST POPULAR' : 'PLAN'}</span>
+            <h2>{plan.name}</h2>
+            <p>{plan.description}</p>
+            <strong style={{ font: '700 32px DM Mono', display: 'block', margin: '20px 0' }}>{plan.price} <small style={{ fontSize: 9, color: '#999' }}>{plan.period}</small></strong>
+            <ul style={{ listStyle: 'none', padding: 0 }}>
+              {plan.features.map((feature) => <li key={feature} style={{ padding: '12px 0', borderTop: '1px solid #444', fontSize: 10 }}>✓ {feature}</li>)}
+            </ul>
+            <button className={`trial-btn ${i === 1 ? 'lime' : 'light'}`} style={{ width: '100%', marginTop: 12 }} onClick={() => setSelected(plan.name)}>{selected === plan.name ? 'Selected ✓' : `Choose ${plan.name}`}</button>
+          </article>
+        ))}
+      </div>
+      <div className="trial-card" style={{ marginTop: 15 }}>
+        <span className="trial-tag">TRIAL BILLING</span>
+        <h3>No payment is connected.</h3>
+        <p>Every pricing action is simulated in this trial build. No card, subscription, invoice or real account is created.</p>
+        <div className="trial-grid">
+          {['Cancel anytime', 'No hidden setup fee', 'Upgrade/downgrade demo', 'Transparent limits'].map((item) => <div className="trial-stat" key={item}><strong style={{ fontSize: 16 }}>✓ {item}</strong><small>Included in the product design</small></div>)}
+        </div>
+      </div>
+    </TrialShell>
+  );
+}
