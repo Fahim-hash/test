@@ -1,8 +1,8 @@
 {
-  "name": "fahim-portfolio-v2",
-  "version": "2.0.0",
+  "name": "skillproof",
+  "version": "1.0.0",
   "private": true,
   "scripts": {"dev": "next dev", "build": "next build", "start": "next start", "lint": "next lint"},
-  "dependencies": {"next": "latest", "react": "latest", "react-dom": "latest", "lucide-react": "^0.468.0"},
-  "devDependencies": {"typescript": "latest", "@types/node": "latest", "@types/react": "latest", "@types/react-dom": "latest", "eslint": "latest", "eslint-config-next": "latest"}
+  "dependencies": {"next": "latest", "react": "latest", "react-dom": "latest", "lucide-react": "latest"},
+  "devDependencies": {"typescript": "latest", "@types/node": "latest", "@types/react": "latest", "@types/react-dom": "latest"}
 }
