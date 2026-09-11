@@ -12,8 +12,18 @@ type Game = { deck: Card[]; discard: Card[]; chains: Card[][]; activeChain: numb
 
 const COLORS: Color[] = ['crimson', 'ocean', 'forest', 'amber'];
 const COLOR_HEX: Record<Color, string> = { crimson: '#e51e46', ocean: '#08708f', forest: '#278a31', amber: '#f3b94f' };
+const CARD_FILE_COLOR: Record<Color, string> = { crimson: 'RED', ocean: 'BLUE', forest: 'GREEN', amber: 'YELLOW' };
 const uid = () => Math.random().toString(36).slice(2, 10);
 const shuffle = <T,>(items: T[]) => [...items].sort(() => Math.random() - 0.5);
+
+function cardSrc(card: Card) {
+  if (card.kind === 'number' && card.color && card.value) return `/data/cards/${CARD_FILE_COLOR[card.color]} ${card.value}.pdf`;
+  const files: Record<Exclude<Kind, 'number'>, string> = {
+    wildColor: 'COLOUR CHANGE.pdf', wildNumber: 'NUMBER SHIFT.pdf', chainSplit: 'CHAIN SPLIT.pdf',
+    linkLock: 'CHAIN LOCK.pdf', reverse: 'REVERSE.pdf', overload: '+3 CARD.pdf', purge: 'PURGE.pdf', snatch: 'SNATCH.pdf',
+  };
+  return `/data/cards/${files[card.kind]}`;
+}
 
 function makeDeck() {
   const deck: Card[] = [];
@@ -54,7 +64,6 @@ function numberPlayable(card: Card, top?: Card) {
 }
 
 function playable(card: Card, game: Game) {
-  if (game.locked && card.kind === 'number') return numberPlayable(card, endpoint(game));
   return numberPlayable(card, endpoint(game));
 }
 
@@ -103,7 +112,7 @@ function resolveCard(game: Game, card: Card, choice?: { color?: Color; number?: 
   }
   if (card.kind === 'overload') {
     const top = endpoint(game); if (top?.kind === 'number') {
-      const next = Math.max(1, Math.min(12, (top.value ?? 1) + (top.value ?? 1) >= 7 ? -3 : 3));
+      const next = Math.max(1, Math.min(12, (top.value ?? 1) + ((top.value ?? 1) >= 7 ? -3 : 3)));
       game.log.unshift(`OVERLOAD: endpoint shifts to ${next}.`);
     }
   }
@@ -125,13 +134,12 @@ function resolveCard(game: Game, card: Card, choice?: { color?: Color; number?: 
   advanceTurn(game);
 }
 
-function CardView({ card, onClick, disabled, selected }: { card: Card; onClick?: () => void; disabled?: boolean; selected?: boolean }) {
+function CardView({ card, onClick, disabled, selected, back = false }: { card: Card; onClick?: () => void; disabled?: boolean; selected?: boolean; back?: boolean }) {
   const accent = card.color ? COLOR_HEX[card.color] : '#e9e5da';
-  return <button disabled={disabled} onClick={onClick} className={`kx-card ${card.color || 'black'} ${selected ? 'selected' : ''}`} style={{ '--accent': accent } as React.CSSProperties}>
-    <span className="card-corner">{card.value ?? '✦'}</span><span className="card-code">KX / {card.kind.replace(/([A-Z])/g, ' $1').toUpperCase()}</span>
-    <span className="card-glyph">{card.kind === 'number' ? card.value : card.kind === 'reverse' ? '↔' : card.kind === 'chainSplit' ? '÷' : card.kind === 'linkLock' ? '▣' : card.kind === 'overload' ? '±' : card.kind === 'purge' ? '⌁' : card.kind === 'snatch' ? '♧' : card.kind === 'wildColor' ? '◌' : '↕'}</span>
-    <strong>{card.label}</strong><small>{card.kind === 'number' ? card.dir === 'up' ? '▲ UP' : card.dir === 'down' ? '▼ DOWN' : '= ANY' : 'ACTION'}</small>
-  </button>;
+  return <div role={onClick ? 'button' : undefined} tabIndex={onClick && !disabled ? 0 : -1} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') onClick?.(); }} onClick={disabled ? undefined : onClick} className={`kx-card ${card.color || 'black'} ${selected ? 'selected' : ''} ${disabled ? 'is-disabled' : ''} ${back ? 'card-back' : ''}`} style={{ '--accent': accent } as React.CSSProperties} aria-label={card.label}>
+    <iframe className="card-art" src={back ? '/data/cards/FRONT SIDE OF A CARD.pdf' : cardSrc(card)} title={back ? 'KINETIX card back' : `${card.label} card artwork`} tabIndex={-1} />
+    <div className="card-art-fallback"><span>{card.value ?? 'K'}</span><b>{card.label}</b></div>
+  </div>;
 }
 
 export default function KinetixPage() {
@@ -191,12 +199,12 @@ export default function KinetixPage() {
     return () => clearTimeout(timer);
   }, [game, active]);
 
-  if (!game) return <main className="kx-shell"><header className="kx-nav"><div className="kx-logo"><span>K</span><div><b>KINETIX</b><small>ONLINE EDITION</small></div></div><span className="kx-status">● READY TO PLAY</span></header><section className="kx-home"><div><p className="eyebrow">STRATEGIC CHAIN-BUILDING</p><h1>CONTROL<br/><i>THE CURRENT.</i></h1><p className="lead">Build the chain. Switch its direction. Break locked links. Trigger actions. Empty your hand before the current explodes.</p><div className="setup"><label>CALLSIGN<input value={name} onChange={e => setName(e.target.value.toUpperCase().slice(0, 14))}/></label><label>OPPONENTS<select value={bots} onChange={e => setBots(Number(e.target.value))}><option value={1}>1 BOT</option><option value={2}>2 BOTS</option><option value={3}>3 BOTS</option></select></label><button onClick={start}>START KINETIX <span>→</span></button></div><p className="fine">Local match is fully playable in this browser. Online rooms can be layered onto the same engine with Supabase Realtime.</p></div><div className="hero-cards"><CardView card={{ id: 'a', kind: 'number', label: '4', value: 4, color: 'crimson', dir: 'up' }}/><CardView card={{ id: 'b', kind: 'number', label: '8', value: 8, color: 'ocean', dir: 'any' }}/><CardView card={{ id: 'c', kind: 'reverse', label: 'REVERSE CURRENT' }}/></div></section><footer>KINETIX / 80 CARDS / 5 CARD HAND / CONTROL THE CURRENT</footer></main>;
+  if (!game) return <main className="kx-shell"><header className="kx-nav"><div className="kx-logo"><span>K</span><div><b>KINETIX</b><small>ONLINE EDITION</small></div></div><span className="kx-status">● READY TO PLAY</span></header><section className="kx-home"><div><p className="eyebrow">STRATEGIC CHAIN-BUILDING</p><h1>CONTROL<br/><i>THE CURRENT.</i></h1><p className="lead">Build the chain. Switch its direction. Break locked links. Trigger actions. Empty your hand before the current explodes.</p><div className="setup"><label>CALLSIGN<input value={name} onChange={e => setName(e.target.value.toUpperCase().slice(0, 14))}/></label><label>OPPONENTS<select value={bots} onChange={e => setBots(Number(e.target.value))}><option value={1}>1 BOT</option><option value={2}>2 BOTS</option><option value={3}>3 BOTS</option></select></label><button onClick={start}>START KINETIX <span>→</span></button></div><p className="fine">Real KINETIX card artwork is loaded directly from <code>data/cards</code>.</p></div><div className="hero-cards"><CardView card={{ id: 'a', kind: 'number', label: '4', value: 4, color: 'crimson', dir: 'up' }}/><CardView card={{ id: 'b', kind: 'number', label: '8', value: 8, color: 'ocean', dir: 'any' }}/><CardView card={{ id: 'c', kind: 'reverse', label: 'REVERSE CURRENT' }}/></div></section><footer>KINETIX / 80 CARDS / 5 CARD HAND / CONTROL THE CURRENT</footer></main>;
 
   return <main className="kx-shell"><header className="kx-nav"><div className="kx-logo"><span>K</span><div><b>KINETIX</b><small>ONLINE EDITION</small></div></div><div className="kx-room">LOCAL ARENA <strong>{game.players.length} PLAYERS</strong></div><button className="kx-quiet" onClick={restart}>NEW GAME</button></header>
     <section className="kx-game"><div className="kx-game-top"><div><p className="eyebrow">THE ARENA</p><h2>{game.winner ? `${game.winner} WINS` : 'CONTROL THE CURRENT'}</h2></div><div className="turn-box"><small>CURRENT PLAYER</small><b>{active?.name}</b><span>{game.turnDir === 1 ? '→ CLOCKWISE' : '← REVERSED'} · CHAIN {game.activeChain + 1} · {game.activeHead === 0 ? 'HEAD A' : 'HEAD B'}</span></div></div>
       <div className="arena"><aside className="side"><div className="side-title">PLAYERS</div>{game.players.map((p, i) => <div key={p.id} className={`player ${p.id === active?.id ? 'active' : ''}`}><span>{String(i + 1).padStart(2, '0')}</span><b>{p.name}</b><em>{p.hand.length}</em></div>)}<div className="side-title space">CURRENT LINK</div><div className="endpoint"><small>ACTIVE ENDPOINT</small><b>{top?.label}</b><span>{top?.color ? top.color.toUpperCase() : 'ACTION'} {top?.value ? `· ${top.value}` : ''}</span>{game.locked && <i>LOCKED</i>}</div></aside>
-        <div className="board"><div className="board-meta"><span>CHAIN NETWORK / {game.chains.length} ACTIVE</span><span>DECK {game.deck.length}</span></div><div className="chains">{game.chains.map((chain, i) => <div key={i} className={`chain ${i === game.activeChain ? 'current' : ''}`}><label>CHAIN {i + 1}{i === game.activeChain ? ' · CURRENT' : ''}</label><div className="chain-row">{chain.slice(-6).map(card => <CardView key={card.id} card={card}/>)}</div></div>)}</div><div className="board-bottom"><div className="deck-stack"><div className="deck-card">K<span>INETIX</span></div><b>{game.deck.length}</b></div><div className="event-log">{game.log.slice(0, 5).map((line, i) => <p key={`${line}-${i}`}>{line}</p>)}</div></div></div>
+        <div className="board"><div className="board-meta"><span>CHAIN NETWORK / {game.chains.length} ACTIVE</span><span>DECK {game.deck.length}</span></div><div className="chains">{game.chains.map((chain, i) => <div key={i} className={`chain ${i === game.activeChain ? 'current' : ''}`}><label>CHAIN {i + 1}{i === game.activeChain ? ' · CURRENT' : ''}</label><div className="chain-row">{chain.slice(-6).map(card => <CardView key={card.id} card={card}/>)}</div></div>)}</div><div className="board-bottom"><div className="deck-stack"><CardView back card={{ id: 'deck', kind: 'number', label: 'DECK', value: 0 }}/><b>{game.deck.length}</b></div><div className="event-log">{game.log.slice(0, 5).map((line, i) => <p key={`${line}-${i}`}>{line}</p>)}</div></div></div>
       </div>
       <div className="hand-panel"><div className="hand-head"><span>YOUR HAND <b>{me?.hand.length}</b></span><small>{active?.id === humanId.current ? 'YOUR TURN · SELECT THEN PLAY' : `WAITING FOR ${active?.name}`}</small></div><div className="hand-row">{me?.hand.map(card => <CardView key={card.id} card={card} selected={selected === card.id} disabled={!playableIds.has(card.id) || active?.id !== humanId.current || !!game.winner} onClick={() => humanAction(card)}/>)}</div><div className="hand-actions"><button disabled={active?.id !== humanId.current || !!game.winner} onClick={drawCard}>DRAW CARD <span>↻</span></button><span>Number cards match color + direction. Action cards are always playable.</span></div></div>
     </section>
